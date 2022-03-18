@@ -3,6 +3,7 @@ package sendgrid
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -108,7 +109,7 @@ func MakeRequestRetryWithContext(ctx context.Context, request rest.Request) (*re
 			return nil, err
 		}
 
-		if response.StatusCode != http.StatusTooManyRequests {
+		if response.StatusCode != http.StatusTooManyRequests && response.StatusCode < 500 {
 			return response, nil
 		}
 
@@ -117,7 +118,7 @@ func MakeRequestRetryWithContext(ctx context.Context, request rest.Request) (*re
 		}
 		retry++
 
-		resetTime := time.Now().Add(rateLimitSleep * time.Millisecond)
+		resetTime := time.Now().Add(time.Duration(rateLimitSleep+rand.Intn(rateLimitSleep/2)) * time.Millisecond)
 
 		reset, ok := response.Headers["X-RateLimit-Reset"]
 		if ok && len(reset) > 0 {
